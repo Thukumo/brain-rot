@@ -1,7 +1,7 @@
 use std::{env, fs, path::PathBuf};
 
 use proc_macro::TokenStream;
-use proc_macro2::Group;
+use proc_macro2::{Delimiter, Group};
 use quote::quote;
 use syn::{LitStr, parse_macro_input};
 
@@ -25,25 +25,21 @@ pub fn run(input: TokenStream) -> TokenStream {
     impl<I: Iterator<Item = u8>> Iterator for Builder<I> {
         type Item = proc_macro2::TokenStream;
         fn next(&mut self) -> Option<Self::Item> {
-            for op in &mut self.0 {
-                return match op {
-                    b'>' => Some(quote! {ptr = ptr.wrapping_add(1) & (mem_size - 1);}),
-                    b'<' => Some(quote! {ptr = ptr.wrapping_sub(1) & (mem_size - 1);}),
-                    b'+' => Some(quote! {*mem.get_unchecked_mut(ptr) += ::std::num::Wrapping(1);}),
-                    b'-' => Some(quote! {*mem.get_unchecked_mut(ptr) -= ::std::num::Wrapping(1);}),
-                    b'.' => Some(quote! {handle.write_all(&[mem.get_unchecked(ptr).0]).unwrap();}),
-                    b',' => Some(quote! {stdin.read_exact(&mut input).unwrap();
-                    *mem.get_unchecked_mut(ptr) = ::std::num::Wrapping(input[0]);}),
-                    b'[' => {
-                        let tokens =
-                            Group::new(proc_macro2::Delimiter::Brace, self.by_ref().collect());
-                        Some(quote! {while mem.get_unchecked(ptr).0 != 0 #tokens})
-                    }
-                    b']' => None,
-                    _ => continue,
-                };
+            match self.0.next()? {
+                b'>' => Some(quote! {ptr = ptr.wrapping_add(1) & (mem_size - 1);}),
+                b'<' => Some(quote! {ptr = ptr.wrapping_sub(1) & (mem_size - 1);}),
+                b'+' => Some(quote! {*mem.get_unchecked_mut(ptr) += ::std::num::Wrapping(1);}),
+                b'-' => Some(quote! {*mem.get_unchecked_mut(ptr) -= ::std::num::Wrapping(1);}),
+                b'.' => Some(quote! {let _ = handle.write_all(&[mem.get_unchecked(ptr).0]);}),
+                b',' => Some(quote! {let _ = stdin.read_exact(&mut input);
+                *mem.get_unchecked_mut(ptr) = ::std::num::Wrapping(input[0]);}),
+                b'[' => {
+                    let tokens = Group::new(Delimiter::Brace, self.by_ref().collect());
+                    Some(quote! {while mem.get_unchecked(ptr).0 != 0 #tokens})
+                }
+                b']' => None,
+                _ => self.next(),
             }
-            None
         }
     }
 
