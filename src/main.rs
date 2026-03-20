@@ -1,3 +1,5 @@
+use rust_brainf::hello;
+
 fn main() {
-    println!("Hello, world!");
+    hello!(println!("Hello, world!"));
 }
