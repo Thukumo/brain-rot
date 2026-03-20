@@ -1,5 +1,5 @@
-use rust_brainf::hello;
+use brain_rot::run;
 
 fn main() {
-    hello!(println!("Hello, world!"));
+    run!("mandelbrot.bf");
 }
