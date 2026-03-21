@@ -14,7 +14,7 @@
         # cargo-expand は nightly の機能を使うため、
         # ツールチェーン自体に nightly を含めるか、拡張として追加します
         rustToolchain = pkgs.rust-bin.stable.latest.default.override {
-          extensions = [ "rust-src" "rust-analyzer" ];
+          extensions = [ "rust-src" "rust-analyzer" "llvm-tools-preview" ];
           # ここで nightly を直接使うか、
           # あるいは pkgs.cargo-expand を別途 inputs に入れます
         };
@@ -25,6 +25,7 @@
             rustToolchain
             pkgs.cargo-expand  # Nixpkgs から導入
             pkgs.rustfmt       # 展開後の整形に必須
+            pkgs.cargo-pgo
           ];
         };
       }
