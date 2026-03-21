@@ -28,14 +28,14 @@ pub fn run(input: TokenStream) -> TokenStream {
             match self.0.next()? {
                 b'>' => Some(quote! {ptr = ptr.wrapping_add(1) & (mem_size - 1);}),
                 b'<' => Some(quote! {ptr = ptr.wrapping_sub(1) & (mem_size - 1);}),
-                b'+' => Some(quote! {*mem.get_unchecked_mut(ptr) += ::std::num::Wrapping(1);}),
-                b'-' => Some(quote! {*mem.get_unchecked_mut(ptr) -= ::std::num::Wrapping(1);}),
-                b'.' => Some(quote! {let _ = handle.write_all(&[mem.get_unchecked(ptr).0]);}),
+                b'+' => Some(quote! {mem[ptr] = mem[ptr].wrapping_add(1);}),
+                b'-' => Some(quote! {mem[ptr] = mem[ptr].wrapping_sub(1);}),
+                b'.' => Some(quote! {let _ = handle.write_all(&[mem[ptr]]);}),
                 b',' => Some(quote! {let _ = stdin.read_exact(&mut input);
-                *mem.get_unchecked_mut(ptr) = ::std::num::Wrapping(input[0]);}),
+                mem[ptr] = input[0];}),
                 b'[' => {
                     let tokens = Group::new(Delimiter::Brace, self.by_ref().collect());
-                    Some(quote! {while mem.get_unchecked(ptr).0 != 0 #tokens})
+                    Some(quote! {while mem[ptr] != 0 #tokens})
                 }
                 b']' => None,
                 _ => self.next(),
@@ -59,10 +59,8 @@ pub fn run(input: TokenStream) -> TokenStream {
             let mut handle = stdout.lock();
             let mut stdin = ::std::io::stdin();
             let mut input = [0u8];
-            let mut mem = vec![::std::num::Wrapping(0); mem_size];
-            unsafe {
-                #(#bf)*
-            }
+            let mut mem = vec![0u8; mem_size];
+            #(#bf)*
         }
     };
     TokenStream::from(expanded)
