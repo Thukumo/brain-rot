@@ -43,23 +43,18 @@ pub fn run(input: TokenStream) -> TokenStream {
         }
     }
 
-    let bf = content
-        .as_bytes()
-        .iter()
-        .copied()
-        .build()
-        .collect::<Vec<_>>();
+    let bf = content.bytes().build();
     let expanded = quote! {
         {
             use ::std::io::Write as _;
             const _: &[u8] = include_bytes!(#path_str);
-            let mem_size = 1<<15;
+            const mem_size: usize = 1<<15;
             let mut ptr: usize = 0;
             let stdout = ::std::io::stdout();
             let mut handle = stdout.lock();
             let mut stdin = ::std::io::stdin();
             let mut input = [0u8];
-            let mut mem = vec![::std::num::Wrapping(0); mem_size];
+            let mut mem = [::std::num::Wrapping(0); mem_size];
             unsafe {
                 #(#bf)*
             }
